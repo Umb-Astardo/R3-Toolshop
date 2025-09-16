@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
+	"embed"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 
 	"github.com/gorilla/websocket"
 	"github.com/toqueteos/webbrowser"
@@ -20,6 +23,9 @@ var upgrader = websocket.Upgrader{
 		return true
 	},
 }
+
+//go:embed r3Toolshop.html
+var embeddedFS embed.FS
 
 func main() {
 	http.HandleFunc("/", serveSPA)
@@ -41,7 +47,45 @@ func serveSPA(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	http.ServeFile(w, r, "r3Toolshop.html")
+
+	// Check if an external r3Toolshop.html exists
+	_, err := os.Stat("r3Toolshop.html")
+	if err == nil {
+		// If it exists, serve the external file.
+		// This allows for easy development and customization without rebuilding.
+		log.Println("Serving external r3Toolshop.html")
+		http.ServeFile(w, r, "r3Toolshop.html")
+		return
+	}
+
+	// If the external file doesn't exist, serve the embedded version.
+	log.Println("Serving embedded r3Toolshop.html")
+	file, err := embeddedFS.Open("r3Toolshop.html")
+	if err != nil {
+		log.Printf("FATAL: Could not open embedded r3Toolshop.html: %v", err)
+		http.Error(w, "Internal Server Error: Embedded file not found.", http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		log.Printf("FATAL: Could not stat embedded r3Toolshop.html: %v", err)
+		http.Error(w, "Internal Server Error: Cannot stat embedded file.", http.StatusInternalServerError)
+		return
+	}
+
+	// Read the file content into a buffer to create an io.ReadSeeker, which http.ServeContent needs.
+	content, err := io.ReadAll(file)
+	if err != nil {
+		log.Printf("FATAL: Could not read embedded r3Toolshop.html: %v", err)
+		http.Error(w, "Internal Server Error: Cannot read embedded file.", http.StatusInternalServerError)
+		return
+	}
+	reader := bytes.NewReader(content)
+
+	// Use http.ServeContent to handle caching headers correctly.
+	http.ServeContent(w, r, "r3Toolshop.html", stat.ModTime(), reader)
 }
 
 // handleWebSocketProxy proxies WebSocket connections to the target R3 server.
