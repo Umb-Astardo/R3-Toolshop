@@ -1,6 +1,6 @@
 # 🛠️R3 Toolshop
 
-Welcome to the R3 Toolshop - this a tool born of ~~my own laziness~~ the necessity to make converting existing tables into R3 relations as painless as possible!  
+Welcome to the R3 Toolshop - this a tool born of ~~my own laziness~~ the necessity to make converting existing tables into R3 relations as painless as possible!  [Check out REI3 here](https://github.com/r3-team/r3)
 
 ### Currently you can convert from
 - **Sharepoint lists**
