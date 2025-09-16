@@ -13,7 +13,7 @@ Welcome to the R3 Toolshop - this a tool born of ~~my own laziness~~ the necessi
 - **Copy existing relations into the same or a different application**
 - **Easily bulk create new users 😁**
 
-It doesn't require any kind of installation - Just download the files and either use Go to build or run it as is.  If you don't want to install Go on your machine then you can just download the executable on it's own - it has the html embedded so you only need that file.  It should be run on the same machine as your dev installation of REI3 and is accessable via a web browser on localhost:8080.
+It doesn't require any kind of installation - Just download the files and either use Go to build or run it as is.  If you don't want to install Go on your Windows box then you can just download the exe file on it's own - it already has the html embedded in it so you only need that file but if you want to ensure that it actually is running the html just download r3toolshop.html and put it in the same folder.  It should be run from the command line on the same machine as your dev installation of REI3 and is accessable via a web browser on localhost:8080.
 
 **Note:** *All your server details are stored in your local storage on the browser and are not viewable in plain text*
 
