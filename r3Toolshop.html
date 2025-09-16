@@ -1,0 +1,2649 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+    <title>🛠️R3 Toolshop</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: auto;
+        }
+
+        th,
+        td {
+            text-align: left;
+            white-space: nowrap;
+            vertical-align: top;
+            padding: 4px 8px;
+            /* Add some space inside cells */
+            /* Ensure rows align at the top */
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            text-align: center;
+        }
+
+        /* Ensure all header rows stay visible */
+        thead tr:nth-child(2) th {
+            top: 60px;
+            /* Adjust based on row height */
+            background-color: white;
+        }
+
+        thead tr:nth-child(3) th {
+            top: 120px;
+            /* Adjust based on row height */
+            background-color: rgb(90, 90, 90);
+            font-size: 18px;
+
+        }
+
+        /* 🔴 Red for empty fields, 🟢 Green when filled */
+        .validate:invalid {
+            background-color: #ffcccc;
+        }
+
+        .validate:valid {
+            background-color: #ccffcc;
+        }
+
+        input[type=text] {
+            width: auto;
+            min-width: 100px;
+            padding: 0px;
+            margin: 0px;
+            box-sizing: border-box;
+            border: 2px solid black;
+            border-radius: 4px;
+            font-size: 18px;
+        }
+
+        select {
+            padding: 0px;
+            border-radius: 4px;
+            background-color: #f1f1f1;
+            width: auto;
+            min-width: 100px;
+            margin: 0px;
+            box-sizing: border-box;
+            border: 2px solid black;
+            font-size: 18px;
+        }
+
+        /* Standardize size of controls within the editable table */
+        #editableTable tbody td>input,
+        #editableTable tbody td>select,
+        #editableTable tbody td>button {
+            width: 100%;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 2px 4px;
+            font-size: 16px;
+            /* Match NewCaptions font-size */
+            height: 25px;
+            /* Set a consistent height for all controls */
+            vertical-align: middle;
+        }
+
+        /* Class for spacing buttons in table headers */
+        .header-button {
+            margin-right: 10px;
+        }
+
+        /* Prevent entire page from having extra scrollbars */
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        /* Flexible container to prevent extra vertical scrollbars */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            /* Enable horizontal scrolling */
+            overflow-y: auto;
+            /* Enable vertical scrolling */
+            white-space: nowrap;
+            border: 1px solid #ddd;
+            flex-grow: 1;
+            /* Makes it take remaining space */
+            min-height: 0;
+            /* Prevents flexbox issues */
+            max-height: calc(100vh - 300px);
+            /* Adjust this to control max table height */
+        }
+
+        th:nth-child(1),
+        td:nth-child(1) {
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #333;
+            /* Charcoal background */
+            color: #f1f1f1;
+            /* Light default text for modals */
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 40%;
+            border-radius: 8px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-content h2 {
+            color: hsl(59, 100%, 50%);
+            /* Yellow title text */
+            margin-top: 0;
+        }
+
+        .modal-content label {
+            color: white;
+            /* White field names (labels) */
+        }
+
+        .modal-content p {
+            color: #f1f1f1;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+        }
+
+        button {
+            background-color: #007bff;
+            /* Blue background */
+            color: white;
+            border: none;
+            padding: 2px 4px;
+            border-radius: 5px;
+            /* Rounded corners */
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            height: 25px;
+            vertical-align: middle;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #0056b3;
+            /* Darker blue on hover */
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(2px);
+            /* Move down slightly when clicked */
+        }
+
+        /* Styles for disabled menu items */
+        .menu-bar>ul>li.disabled>span,
+        .menu-bar .submenu li.disabled>span,
+        .menu-bar .submenu li.disabled>a {
+            color: #888;
+            /* Grey out the text */
+            cursor: not-allowed;
+            /* Show disabled cursor */
+        }
+
+        .menu-bar>ul>li.disabled:hover {
+            background-color: #333;
+            /* Prevent hover effect on top-level items */
+        }
+
+        .menu-bar .submenu li.disabled:hover {
+            background-color: #333;
+            /* Prevent hover effect on sub-menu items */
+        }
+
+        /* Prevent submenus from showing on disabled items */
+        .menu-bar li.disabled:hover>.submenu {
+            display: none;
+        }
+
+        /* --- New Menu Bar Styles --- */
+        .menu-bar {
+            background-color: #333;
+            overflow: visible;
+            /* Allow submenus to be visible */
+            width: 100%;
+        }
+
+        .menu-bar ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .menu-bar>ul>li {
+            float: left;
+            position: relative;
+            /* For submenu positioning */
+        }
+
+        .menu-bar li a,
+        .menu-bar li span {
+            display: block;
+            color: white;
+            text-align: left;
+            padding: 14px 16px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .menu-bar li:hover {
+            background-color: #4a5568;
+            /* Blue-gray for highlighted items */
+        }
+
+        /* Add indicator for items with submenus */
+        .menu-bar .submenu li:has(> .submenu)>span {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-bar .submenu li:has(> .submenu)>span::after {
+            content: '›';
+            font-weight: bold;
+            padding: 3px;
+            margin: -3px 0;
+            /* Add padding without increasing menu item height */
+        }
+
+        /* Submenu (dropdown) styles */
+        .menu-bar .submenu {
+            display: none;
+            position: absolute;
+            background-color: #333;
+            /* Black background for submenus */
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            /* Ensure it's above other content */
+            border-radius: 5px;
+            /* Rounded corners */
+            /* max-height and overflow are now conditional */
+        }
+
+        /* Style for menus that need scrolling */
+        .menu-bar .submenu.scrollable {
+            max-height: 430px;
+            /* Approx. 10 items before scrolling */
+            overflow-y: auto;
+            /* Enable scrolling for long menus */
+        }
+
+        .menu-bar .submenu li {
+            float: none;
+            position: relative;
+            /* This is needed for nested submenus to be positioned correctly */
+        }
+
+        .menu-bar .submenu li a,
+        .menu-bar .submenu li span {
+            color: white;
+            /* White text on black background */
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+        }
+
+        .menu-bar .submenu li:hover {
+            background-color: #4a5568;
+            /* Blue-gray for highlighted items */
+        }
+
+        /* Show submenu with JS by adding the .visible class */
+        .menu-bar .submenu.visible {
+            display: block;
+        }
+
+        /* Style for the selected/ticked menu item */
+        .menu-bar .submenu li a.ticked::before {
+            content: '✓ ';
+            /* Unicode checkmark */
+            color: green;
+            font-weight: bold;
+        }
+
+        /* Position nested submenus to the side */
+        .menu-bar .submenu .submenu {
+            top: 0;
+            left: 100%;
+        }
+
+        /* Custom scrollbar for dark submenus */
+        .menu-bar .submenu.scrollable::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .menu-bar .submenu.scrollable::-webkit-scrollbar-track {
+            background: #555;
+        }
+
+        .menu-bar .submenu.scrollable::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .menu-bar .submenu.scrollable::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+
+        /* Custom styles for user creation modal buttons */
+        #usersModal .modal-content button {
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+            height: auto;
+            padding: 10px;
+        }
+
+        /* Custom styles for server modal inputs */
+        #serverModal .modal-content input[type=text],
+        #serverModal .modal-content input[type=number],
+        #serverModal .modal-content input[type=password] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+    </style>
+
+
+</head>
+
+<body>
+    <div style="background-color:#006600; height:80px; text-align:center; vertical-align:middle; font-size:40px;
+        color:hsl(59,100%,50%)">🛠️R3 Toolshop</div>
+    <nav class="menu-bar">
+        <ul>
+            <li>
+                <span>Server</span>
+                <ul id="server-menu-items" class="submenu">
+                    <!-- This item is a direct action, wrapped in a span for consistency with dynamic items -->
+                    <li><a href="#" id="add-server-link">Add new server</a></li>
+                    <!-- 
+                        Server list will be dynamically inserted here by JavaScript.
+                        Each server will also be a submenu with 'Connect' and 'Delete'.
+                    -->
+                </ul>
+            </li>
+            <li id="applications-menu">
+                <span>Applications</span>
+                <ul id="applications-menu-items" class="submenu">
+                    <!-- This will be populated by JavaScript after connecting to a server -->
+                </ul>
+            </li>
+            <li id="tools-menu">
+                <span>Tools</span>
+                <ul id="tools-menu-items" class="submenu">
+                    <li>
+                        <span>Create a table</span>
+                        <ul class="submenu">
+                            <li><a href="#" id="tool-create-sharepoint">From SharePoint</a></li>
+                            <li><a href="#" id="tool-create-json">From JSON</a></li>
+                            <li><a href="#" id="tool-create-csv">From CSV</a></li>
+                            <li><a href="#" id="tool-create-sqlite">From SQLite</a></li>
+                            <li><a href="#" id="tool-create-blank">From Blank</a></li>
+                            <li id="copy-relation-tool">
+                                <span>Copy Existing Relation</span>
+                                <ul id="copy-relation-menu-items" class="submenu"></ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li><a href="#" id="tool-create-users">Bulk Create Users</a></li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+    <div id="serverModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('serverModal')">&times;</span>
+            <h2>Please enter your R3 server details</h2>
+            <input type="hidden" id="editServerId">
+
+            <label>Server Name:</label>
+            <input type="text" id="desc" required>
+
+            <label>Server Address:</label>
+            <input type="text" id="serverAddr" required>
+
+            <label>Port:</label>
+            <input type="number" id="port" required>
+
+            <label>Username:</label>
+            <input type="text" id="username" required>
+
+            <label>Password:</label>
+            <input type="password" id="password" required>
+
+            <button id="saveButton" onclick="submitServerDetails()" disabled>Save</button>
+        </div>
+    </div>
+    <textarea readonly style="width: 50%; margin: 0 auto; display: block; text-align: left; resize: none;"
+        id="outputBox" name="outputBox" rows="18" cols="80"></textarea>
+
+    <div id="editableTableContainer" class="table-container" style="display: none;">
+        <table id="editableTable" align="center" cellpadding="0" cellspacing="0"
+            style="width:99%; font-size:18px; display: none;">
+            <thead>
+                <tr style="height:60px;">
+                    <th colspan="12" style="background-color:rgb(3, 100, 11); color:white; font-size:40px;">New Relation
+                        Data</th>
+                    <th colspan="31" style="background-color:rgb(106, 175, 253); color:black; font-size:30px;">Imported
+                        Field Data</th>
+                </tr>
+                <tr style="height:60px;">
+                    <th colspan="12"
+                        style="background-color:rgb(3, 100, 11); color:white; font-size:25px; text-align: left;">
+                        <button type="button" class="header-button" onclick="addRow()">Add New Field</button> New
+                        Relation Name
+                        <input id="NewName" class="validate" type="text" value="" required
+                            onchange="this.value = toSnakeCase(this.value); validateCreateButton();">
+                        <button type="button" id="createButton" class="header-button" onclick="CreateRelation()"
+                            disabled>Create Relation</button>
+                        <button type="button" id="cancelButton" onclick="cancelTable()">Cancel</button>
+                    </th>
+                    <th colspan="31" style="background-color:rgb(106, 175, 253); color:black; font-size:21px;"></th>
+                    </th>
+                <tr style="height:40px; font-size:21px; background-color:rgb(90, 90, 90); color:rgb(226, 211, 0)">
+                    <!-- Headers will be populated by JavaScript -->
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be populated by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- New Modals for Tools -->
+    <div id="sharepointModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('sharepointModal')">&times;</span>
+            <h2>Import from SharePoint</h2>
+            <label>SharePoint Domain:</label>
+            <input id="SharepointDomain" name="SharepointDomain" required type="text" />
+            <label>SharePoint Site:</label>
+            <input id="SharepointSite" name="SharepointSite" required type="text" />
+            <label>List Name:</label>
+            <input id="ListName" name="ListName" required type="text" />
+            <button type="button" onclick="openSharePointAPI()">Open API Page</button>
+            <hr>
+            <label>Paste the SharePoint XML response below:</label>
+            <textarea id="apiResponse" name="apiResponse" rows="10" style="width: 98%;"></textarea>
+            <br><br>
+            <button type="button" onclick="processSharepointDataForSelection()">Process Fields</button>
+            <button type="button" onclick="closeModal('sharepointModal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="jsonModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('jsonModal')">&times;</span>
+            <h2>Import from JSON</h2>
+            <hr>
+            <label>Paste the JSON data below:</label>
+            <textarea id="jsonApiResponse" name="jsonApiResponse" rows="10" style="width: 98%;"></textarea>
+            <br><br>
+            <button type="button" onclick="processJsonDataForSelection()">Process Fields</button>
+            <button type="button" onclick="closeModal('jsonModal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="copyRelationModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('copyRelationModal')">&times;</span>
+            <h2>Copy Existing Relation</h2>
+            <label>Target Application:</label>
+            <select id="copyTargetAppDropdown" required onchange="checkCopyButton()">
+                <!-- JS will populate this -->
+            </select>
+            <label>Relation to Copy:</label>
+            <select id="copyRelDropdown" required onchange="checkCopyButton()">
+                <option value="">Select a Table</option>
+                <!-- JavaScript will populate this -->
+            </select>
+            <label>New Relation Name:</label>
+            <input id="copyRelationNewName" type="text" value="" required
+                onchange="this.value = toSnakeCase(this.value); checkCopyButton();">
+            <br><br>
+            <button type="button" id="copyRelationButton" onclick="copyRelation()" disabled>Copy</button>
+            <button type="button" onclick="closeModal('copyRelationModal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="usersModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('usersModal')">&times;</span>
+            <h2>Bulk Create Users from CSV</h2>
+            <p>Download the template, fill it in, and upload it to create multiple users at once.</p>
+            <button type="button" id="downloadUserTemplateBtn">Download CSV Template</button>
+            <button type="button" id="uploadUserCsvBtn">Upload and Create Users</button>
+            <button type="button" onclick="closeModal('usersModal')">Close</button>
+            <hr>
+            <div id="user-creation-log"
+                style="max-height: 200px; overflow-y: auto; background-color: #222; padding: 10px; font-family: monospace; white-space: pre-wrap;">
+                Awaiting file upload...</div>
+        </div>
+    </div>
+
+    <!-- Modal for selecting a table from an SQLite file -->
+    <div id="sqliteTableSelectionModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('sqliteTableSelectionModal')">&times;</span>
+            <h2>Select a Table to Import</h2>
+            <p>The following tables were found in the database file. Please select one to import its structure.</p>
+            <select id="sqliteTableSelect" style="width: 100%; margin-bottom: 15px;"></select>
+            <button type="button" id="importSqliteTableButton">Import Schema</button>
+            <button type="button" onclick="closeModal('sqliteTableSelectionModal')">Cancel</button>
+        </div>
+    </div>
+
+
+    <!-- Modal for selecting fields to import -->
+    <div id="fieldSelectionModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('fieldSelectionModal')">&times;</span>
+            <h2>Please select the fields you wish to import</h2>
+            <div id="fieldListContainer"
+                style="max-height: 300px; overflow-y: auto; margin-bottom: 15px; border: 1px solid #555; padding: 10px; background-color: #222;">
+                <!-- Fields will be dynamically inserted here -->
+            </div>
+            <button type="button" id="importSelectedFieldsButton">Import Selected</button>
+            <button type="button" onclick="closeModal('fieldSelectionModal')">Cancel</button>
+        </div>
+    </div>
+
+
+    <script>
+        let rei3Types = ["richtext", "text", "textarea", "color", "drawing", "iframe", "boolean", "date", "datetime", "time", "number", "decimal", "files", "float", "1:1", "n:1", "regconfig", "uuid"];
+        let breakActions = ["NO ACTION", "RESTRICT", "CASCADE", "SET NULL", "SET DEFAULT"];
+        const sharepointFieldsToIgnore = new Set([
+            'Title', 'Color Tag', 'Compliance Asset Id', 'ID', 'Content Type', 'Modified',
+            'Created', 'Created By', 'Modified By', 'Version', 'Attachments', 'Edit',
+            'Type', 'Item Child Count', 'Folder Child Count', 'Label setting',
+            'Retention label', 'Retention label Applied', 'Label applied by',
+            'Item is a Record', 'App Created By', 'App Modified By'
+        ]);
+
+        function addNewServer() {
+            document.getElementById('editServerId').value = '';
+            document.getElementById('desc').value = '';
+            document.getElementById('serverAddr').value = '';
+            document.getElementById('port').value = '';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+
+            openModal();
+            validateFields();
+        }
+
+        function openModal() {
+            document.getElementById("serverModal").style.display = "block";
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        function validateFields() {
+            let modal = document.getElementById("serverModal");
+            if (!modal) {
+                console.error("❌ serverModal not found!");
+                return;
+            }
+
+            let inputs = modal.querySelectorAll("input:not([type=hidden])");
+
+            let isValid = Array.from(inputs).every(input => {
+                return input.value.trim() !== "";
+            });
+
+            let saveButton = document.getElementById("saveButton");
+            if (!saveButton) {
+                console.error("❌ saveButton not found!");
+                return;
+            }
+
+            saveButton.disabled = !isValid;
+        }
+
+        function openSharepointModal() {
+            document.getElementById('sharepointModal').style.display = 'block';
+        }
+
+        function openJsonModal() {
+            document.getElementById('jsonModal').style.display = 'block';
+        }
+
+        function openCopyRelationModal(relationId, relationName) {
+            document.getElementById('copyRelDropdown').value = relationId;
+            document.getElementById('copyRelationModal').style.display = 'block';
+        }
+
+        function openUsersModal() {
+            document.getElementById('usersModal').style.display = 'block';
+        }
+
+
+        function loadR3Servers() {
+            let ServersDropdown = document.getElementById("ServersSelect");
+            let serverMenuItems = document.getElementById("server-menu-items");
+
+            const R3tsData = loadDataFromLocalStorage();
+            const servers = R3tsData ? R3tsData.Ricservers : [];
+
+            while (serverMenuItems.children.length > 1) {
+                serverMenuItems.removeChild(serverMenuItems.lastChild);
+            }
+
+            servers.forEach(item => {
+                let serverLi = document.createElement('li');
+                serverLi.innerHTML = `
+                    <span>${item.name}</span>
+                    <ul class="submenu">
+                        <li><a onclick='connectToServerFromMenu("${item.id}")'>Connect</a></li>
+                        <li><a onclick='editServer("${item.id}")'>Edit</a></li>
+                        <li><a onclick='deleteServer("${item.id}", ${JSON.stringify(item.name)})'>Delete</a></li>
+                    </ul>
+                `;
+                serverMenuItems.appendChild(serverLi);
+            });
+
+            checkMenuScrolling(serverMenuItems);
+        }
+
+        function submitServerDetails() {
+            // 1. Get servers from local storage
+            const R3tsData = loadDataFromLocalStorage() || { Ricservers: [] };
+            const serverId = document.getElementById('editServerId').value;
+
+            if (serverId) {
+                // --- EDIT MODE ---
+                const serverIndex = R3tsData.Ricservers.findIndex(s => s.id === serverId);
+                if (serverIndex === -1) {
+                    alert("Error: Could not find server to update.");
+                    return;
+                }
+
+                const updatedServer = {
+                    id: serverId,
+                    name: document.getElementById("desc").value,
+                    serverAddress: document.getElementById("serverAddr").value,
+                    port: document.getElementById("port").value,
+                    username: document.getElementById("username").value,
+                    password: document.getElementById("password").value
+                };
+                R3tsData.Ricservers[serverIndex] = updatedServer;
+                logBoxMessage(`✅ Server '${updatedServer.name}' updated.`);
+
+            } else {
+                // --- ADD MODE ---
+                const newServer = {
+                    id: `server_${Date.now()}`, // Unique ID
+                    name: document.getElementById("desc").value,
+                    serverAddress: document.getElementById("serverAddr").value,
+                    port: document.getElementById("port").value,
+                    username: document.getElementById("username").value,
+                    password: document.getElementById("password").value // Note: Storing passwords in localStorage is insecure.
+                };
+                R3tsData.Ricservers.push(newServer);
+                logBoxMessage(`✅ Server '${newServer.name}' saved.`);
+            }
+
+            // Save back to local storage
+            saveDataToLocalStorage(R3tsData);
+
+            // Refresh the UI and close modal
+            loadR3Servers();
+            closeModal('serverModal');
+        }
+
+        /**
+         * A generic helper to send a request over the WebSocket and handle the response.
+         * It wraps the callback-based WebSocket API in a modern Promise.
+         * @param {object} requestPayload The full request object to send.
+         * @returns {Promise<object>} The payload from the server's response.
+         */
+        async function sendWebSocketRequest(requestPayload) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                throw new Error("WebSocket is not connected.");
+            }
+
+            const transactionNr = requestPayload.TransactionNr;
+            if (!transactionNr) {
+                throw new Error("Request payload must have a TransactionNr.");
+            }
+
+            return new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    delete pendingRequests[transactionNr];
+                    reject(new Error(`Request timed out for transaction ${transactionNr}`));
+                }, 15000); // 15 second timeout
+
+                pendingRequests[transactionNr] = { resolve, reject, timeout };
+                ws.send(JSON.stringify(requestPayload));
+            });
+        }
+
+        /**
+         * A helper to send a command-based request over the WebSocket.
+         * @param {string} ressource - The target ressource (e.g., 'relation', 'attribute').
+         * @param {string} action - The action to perform (e.g., 'set', 'get', 'copy').
+         * @param {object} payload - The request payload.
+         * @returns {Promise<object>} The payload from the server's response.
+         */
+        async function sendWsRequest(ressource, action, payload) {
+            if (!currentConnection.token) {
+                throw new Error("Cannot send request, not authenticated.");
+            }
+            const transactionNr = Date.now() + Math.floor(Math.random() * 1000);
+            const requestPayload = {
+                TransactionNr: transactionNr,
+                AuthToken: currentConnection.token,
+                Requests: [{
+                    ressource,
+                    Action: action, // e.g. 'set'
+                    payload
+                }]
+            };
+            const wsResponse = await sendWebSocketRequest(requestPayload);
+            return wsResponse;
+        }
+
+        async function connectToServerFromMenu(serverId) {
+
+            // Get server details from local storage
+            const R3tsData = loadDataFromLocalStorage();
+            const server = R3tsData.Ricservers.find(s => s.id === serverId);
+
+            if (!server) {
+                console.error("❌ Could not find server with ID:", serverId);
+                logBoxMessage(`❌ Could not find server to connect.`);
+                return;
+            }
+
+            logBoxMessage(`Connecting to '${server.name}' via WebSocket...`);
+
+            // Close any existing connection
+            if (ws && ws.readyState !== WebSocket.CLOSED) {
+                ws.close();
+            }
+
+            // Establish WebSocket connection
+            const target = encodeURIComponent(`${server.serverAddress}:${server.port}`);
+            ws = new WebSocket(`ws://${window.location.host}/ws?target=${target}`);
+
+            // Central message handler
+            ws.onmessage = (event) => {
+                try {
+                    const responseData = JSON.parse(event.data);
+                    const transactionNr = responseData.transactionNr;
+
+                    // If a transactionNr is present and we are waiting for it, process it.
+                    // All other messages (system status, broadcasts with transactionNr=0, etc.) are ignored.
+                    if (transactionNr && pendingRequests[transactionNr]) {
+                        clearTimeout(pendingRequests[transactionNr].timeout);
+                        const responsePayload = responseData.responses?.[0]?.payload || {};
+
+                        // If the response contains a token (from a login request), store it.
+                        if (responsePayload.token) {
+                            currentConnection.token = responsePayload.token;
+                        }
+                        pendingRequests[transactionNr].resolve(responsePayload);
+                        delete pendingRequests[transactionNr];
+                    }
+                } catch (error) {
+                    console.error("Error processing WebSocket message:", error, event.data);
+                }
+            };
+
+            // Handle connection opening and authentication
+            ws.onopen = async () => {
+                logBoxMessage("WebSocket connection established. Authenticating...");
+                try {
+                    // 1. Send login request and wait for the response
+                    const transactionNr = Date.now() + Math.floor(Math.random() * 1000);
+                    const loginRequest = {
+                        TransactionNr: transactionNr,
+                        Requests: [{
+                            ressource: "auth",
+                            Action: "user",
+                            payload: {
+                                username: server.username,
+                                password: server.password
+                            }
+                        }]
+                    };
+
+                    const loginResponse = await sendWebSocketRequest(loginRequest);
+
+                    if (!loginResponse.token) {
+                        throw new Error('Authentication successful, but no token received.');
+                    }
+
+                    // Store connection details globally
+                    currentConnection.server = server;
+                    logBoxMessage(`✅ Authenticated with '${server.name}'.`);
+
+                    // Fetch all application schemas
+                    await fetchApplicationSchemas();
+
+                    // Enable the Applications menu
+                    document.getElementById('applications-menu').classList.remove('disabled');
+
+                    // Populate UI
+                    logBoxMessage(`✅ Connected to server '${server.name}'.\nPlease select an the application you want to work on.`);
+
+                } catch (error) {
+                    logBoxMessage(`❌ Connection process failed: ${error.message}`);
+                    console.error("❌ Connection process failed:", error);
+                    if (ws) ws.close();
+                }
+            };
+
+            // Handle errors and closing
+            ws.onerror = (error) => {
+                logBoxMessage(`❌ WebSocket error. Could not connect to ${server.name}. Check server address and port.`);
+                console.error("WebSocket Error:", error);
+                // Disable menus on error
+                document.getElementById('applications-menu').classList.add('disabled');
+                document.getElementById('tools-menu').classList.add('disabled');
+                document.getElementById('copy-relation-tool').classList.add('disabled');
+            };
+
+            ws.onclose = () => {
+                logBoxMessage("WebSocket connection closed.");
+                ws = null;
+                currentConnection.server = null;
+                currentConnection.token = null;
+                currentApplicationId = null;
+                // Disable menus when disconnected
+                document.getElementById('applications-menu').classList.add('disabled');
+                document.getElementById('tools-menu').classList.add('disabled');
+                document.getElementById('copy-relation-tool').classList.add('disabled');
+
+                // Untick any selected application
+                document.querySelectorAll('#applications-menu-items li a.ticked').forEach(el => el.classList.remove('ticked'));
+            };
+        }
+
+        function deleteServer(serverId, serverName) {
+            if (!confirm(`Are you sure you want to delete the server "${serverName}"? This cannot be undone.`)) {
+                return;
+            }
+
+
+            // Get servers from local storage
+            let R3tsData = loadDataFromLocalStorage();
+
+            // Filter out the server to be deleted
+            R3tsData.Ricservers = R3tsData.Ricservers.filter(server => server.id !== serverId);
+
+            // Save the updated list back to local storage
+            saveDataToLocalStorage(R3tsData);
+
+            logBoxMessage(`✅ Server "${serverName}" deleted successfully.`);
+            loadR3Servers(); // Refresh the server list in the UI
+        }
+
+        function editServer(serverId) {
+
+            const R3tsData = loadDataFromLocalStorage();
+            const server = R3tsData.Ricservers.find(s => s.id === serverId);
+
+            if (!server) {
+                console.error("❌ Could not find server to edit with ID:", serverId);
+                alert("Could not find server to edit.");
+                return;
+            }
+
+            document.getElementById('editServerId').value = server.id;
+            document.getElementById('desc').value = server.name;
+            document.getElementById('serverAddr').value = server.serverAddress;
+            document.getElementById('port').value = server.port;
+            document.getElementById('username').value = server.username;
+            document.getElementById('password').value = server.password;
+
+            openModal();
+            validateFields();
+        }
+
+        function populateApplicationsMenu() {
+            const menu = document.getElementById('applications-menu-items');
+            if (!menu) {
+                console.error("Could not find applications-menu-items element.");
+                return;
+            }
+            menu.innerHTML = ''; // Clear any old items
+
+            modulesData.forEach(module => {
+                // Use namePwa as requested, but fall back to name if it doesn't exist.
+                const displayName = module.namePwa || module.name;
+                if (displayName) {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.href = '#';
+                    a.textContent = displayName;
+                    a.onclick = (event) => {
+                        event.preventDefault();
+                        selectApplication(module.id, a);
+                    };
+
+                    // If this module is the currently selected one, re-apply the tick.
+                    if (module.id === currentApplicationId) {
+                        a.classList.add('ticked');
+                    }
+                    li.appendChild(a);
+                    menu.appendChild(li);
+                }
+            });
+
+            checkMenuScrolling(menu);
+        }
+
+        function selectApplication(moduleId, clickedElement) {
+            // Remove the 'ticked' class from all items in this menu
+            const menuItems = document.querySelectorAll('#applications-menu-items li a');
+            menuItems.forEach(item => item.classList.remove('ticked'));
+
+            // Add the 'ticked' class to the clicked item
+            clickedElement.classList.add('ticked');
+
+            // Store the selected application ID globally
+            currentApplicationId = moduleId;
+
+            // Find the module data
+            const selectedModule = modulesData.find(module => module.id === moduleId);
+            if (!selectedModule) {
+                console.warn("⚠️ Selected module not found for ID:", moduleId);
+                document.getElementById('tools-menu').classList.add('disabled');
+                document.getElementById('copy-relation-tool').classList.add('disabled');
+                return;
+            }
+
+            // Enable the Tools menu
+            document.getElementById('tools-menu').classList.remove('disabled');
+
+            // Populate sub-menus and enable/disable them based on data
+            populateCopyRelationMenu(selectedModule.relations);
+            updateCopyRelationsDropdown(selectedModule.relations);
+            populateCopyTargetAppDropdown();
+
+            const copyTool = document.getElementById('copy-relation-tool');
+            if (selectedModule.relations && selectedModule.relations.length > 0) {
+                copyTool.classList.remove('disabled');
+            } else {
+                copyTool.classList.add('disabled');
+            }
+
+            logBoxMessage(`Application '${selectedModule.namePwa || selectedModule.name}' selected.`);
+
+        }
+
+        function checkMenuScrolling(menuElement) {
+            if (!menuElement) return;
+            // The check is for *more than* 10 items.
+            if (menuElement.children.length > 10) {
+                menuElement.classList.add('scrollable');
+            } else {
+                menuElement.classList.remove('scrollable');
+            }
+        }
+
+        function hideAllViews() {
+            // A helper to ensure a clean slate before showing a new view.
+            const views = ["outputBox", "editableTableContainer", "CSVtable", "addUserContainer"];
+            views.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.style.display = "none";
+                }
+            });
+        }
+
+        function showCreateTableInterface() {
+            // This function provides a direct way to get to the blank table creation screen.
+            // It hides all other primary views and then calls makeBlank() to show the table.
+            hideAllViews();
+            makeBlank();
+        }
+
+        function populateCopyRelationMenu(relations) {
+            const menu = document.getElementById('copy-relation-menu-items');
+            menu.innerHTML = ''; // Clear old items
+
+            relations.forEach(relation => {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.href = '#';
+                a.textContent = relation.name;
+                a.onclick = (e) => {
+                    e.preventDefault();
+                    cancelTable();
+                    openCopyRelationModal(relation.id, relation.name);
+                };
+                li.appendChild(a);
+                menu.appendChild(li);
+            });
+
+            checkMenuScrolling(menu);
+        }
+
+        function populateCopyTargetAppDropdown() {
+            const dropdown = document.getElementById('copyTargetAppDropdown');
+            dropdown.innerHTML = ''; // Clear old options
+
+            modulesData.forEach(module => {
+                const displayName = module.namePwa || module.name;
+                if (displayName) {
+                    const option = document.createElement('option');
+                    option.value = module.id;
+                    option.textContent = displayName;
+                    // Pre-select the currently active application
+                    if (module.id === currentApplicationId) {
+                        option.selected = true;
+                    }
+                    dropdown.appendChild(option);
+                }
+            });
+        }
+
+        function updateCopyRelationsDropdown(relations) {
+            let copyRelationsDropdown = document.getElementById("copyRelDropdown");
+            copyRelationsDropdown.innerHTML = '<option value="">Select a relation</option>';
+
+            relations.forEach(relation => {
+                let option = document.createElement("option");
+                option.value = relation.id;
+                option.textContent = relation.name;
+                copyRelationsDropdown.appendChild(option);
+            });
+        }
+
+        function showEditableTable() {
+            hideAllViews();
+            document.getElementById('editableTableContainer').style.display = 'block';
+            document.getElementById('editableTable').style.display = 'table';
+        }
+
+        // --- Application Initialization ---
+        // All startup logic is consolidated here for clarity and to ensure correct execution order.
+        document.addEventListener("DOMContentLoaded", function () {
+
+            // Initialize Local Storage
+            // On page load, check if our local storage object exists and is valid. If not, create it.
+            if (!loadDataFromLocalStorage()) {
+                const defaultData = { Ricservers: [] };
+                saveDataToLocalStorage(defaultData);
+            }
+
+            // Populate Server Menu from Local Storage
+            loadR3Servers();
+
+            // Attach Core Event Listeners
+            // --- Server Management ---
+            const addServerLink = document.getElementById("add-server-link");
+            if (addServerLink) {
+                addServerLink.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    addNewServer();
+                });
+            }
+
+            const modal = document.getElementById("serverModal");
+            if (modal) {
+                modal.querySelectorAll("input").forEach(input => {
+                    input.addEventListener("input", validateFields);
+                });
+            }
+
+            // --- Tools Menu Listeners ---
+            document.getElementById("tool-create-blank").addEventListener("click", (e) => {
+                e.preventDefault();
+                showCreateTableInterface();
+            });
+            document.getElementById("tool-create-sharepoint").addEventListener("click", (e) => {
+                e.preventDefault();
+                cancelTable();
+                openSharepointModal();
+            });
+            document.getElementById("tool-create-json").addEventListener("click", (e) => {
+                e.preventDefault();
+                cancelTable();
+                openJsonModal();
+            });
+            document.getElementById("tool-create-csv").addEventListener("click", (e) => {
+                e.preventDefault();
+                cancelTable();
+                handleCsvImport();
+            });
+            document.getElementById("tool-create-sqlite").addEventListener("click", (e) => {
+                e.preventDefault();
+                cancelTable();
+                handleSqliteImport();
+            });
+            document.getElementById("tool-create-users").addEventListener("click", (e) => {
+                e.preventDefault();
+                cancelTable();
+                openUsersModal();
+            });
+            document.getElementById('importSelectedFieldsButton').addEventListener('click', importSelectedFields);
+            document.getElementById('downloadUserTemplateBtn').addEventListener('click', downloadUserCsvTemplate);
+            document.getElementById('importSqliteTableButton').addEventListener('click', importSchemaFromSqliteSelection);
+            document.getElementById('uploadUserCsvBtn').addEventListener('click', handleUserCsvUpload);
+
+
+
+
+            // Initial UI State & Validation
+            document.getElementById('applications-menu').classList.add('disabled');
+            document.getElementById('tools-menu').classList.add('disabled');
+            document.getElementById('copy-relation-tool').classList.add('disabled');
+            loadModules(); // Currently an empty function, but good for structure.
+            checkTypeAsString();
+            updateAllDropdownStates();
+            validateCreateButton();
+
+            // Function to close all open submenus
+            function closeAllMenus() {
+                document.querySelectorAll('.menu-bar .submenu.visible').forEach(submenu => {
+                    submenu.classList.remove('visible');
+                });
+            }
+
+            // Close menus when clicking anywhere on the document
+            document.addEventListener('click', (event) => {
+                if (!event.target.closest('.menu-bar')) {
+                    closeAllMenus();
+                }
+            });
+
+            // Add click handlers to menu items using event delegation
+            document.querySelector('.menu-bar').addEventListener('click', (event) => {
+                const trigger = event.target;
+
+                // If an action link (A tag) is clicked, its own onclick will fire,
+                // and then we close all menus.
+                if (trigger.tagName === 'A') {
+                    closeAllMenus();
+                    return;
+                }
+
+                // Handle clicks on SPANs that toggle submenus
+                if (trigger.tagName === 'SPAN' && trigger.parentElement.tagName === 'LI') {
+                    const parentLi = trigger.parentElement;
+                    const submenu = parentLi.querySelector(':scope > .submenu');
+
+                    if (submenu) {
+                        event.stopPropagation(); // Prevent the document click listener from firing
+                        const isVisible = submenu.classList.contains('visible');
+
+                        // If it's a top-level menu, close all others before toggling
+                        if (parentLi.parentElement.parentElement.matches('.menu-bar') && !isVisible) {
+                            closeAllMenus();
+                        }
+                        submenu.classList.toggle('visible');
+                    }
+                }
+            });
+
+            // 5. Initial Log Messages
+            logBoxMessage("Welcome to the R3 Toolshop");
+            logBoxMessage("To get started please select a server and hit Connect");
+
+        });
+
+        // --- Client-Side State Management ---
+        // Global variable to hold the currently active server connection and auth token.
+        let currentConnection = {
+            server: null, // Will hold the full server object from localStorage
+            token: null   // Will hold the auth token from the R3 server
+        };
+        let currentApplicationId = null; // To store the selected application ID
+        // WebSocket management
+        let ws = null;
+        let pendingRequests = {};
+        // Global variable to hold the data for the editable table, replacing backend state.
+        let sqliteDb = null;
+        let pendingImportData = [];
+        let pendingImportListName = '';
+        let tableData = [];
+        let hasTypeAsString = "not set";
+
+        let existingRelations = [];
+        let existingAttributes = [];
+        let allFields = [];
+
+        // --- Local Storage Encoding/Decoding ---
+
+        function saveDataToLocalStorage(data) {
+            try {
+                const jsonString = JSON.stringify(data);
+                const encodedData = btoa(jsonString); // Base64 encode
+                localStorage.setItem('R3tsData', encodedData);
+            } catch (error) {
+                console.error("Failed to save data to localStorage:", error);
+                alert("Could not save server data. Your browser might be in private mode or storage is full.");
+            }
+        }
+
+        function loadDataFromLocalStorage() {
+            const encodedData = localStorage.getItem('R3tsData');
+            if (!encodedData) {
+                return null;
+            }
+            try {
+                const jsonString = atob(encodedData);
+                return JSON.parse(jsonString);
+            } catch (e) {
+                console.error("Error decoding data from localStorage. It might be corrupted or in an old format. Resetting.", e);
+                localStorage.removeItem('R3tsData');
+                return null;
+            }
+        }
+
+
+        function logBoxMessage(message) {
+            let outputBox = document.getElementById("outputBox");
+            if (message == "***CLEAR***") {
+                outputBox.value = "";
+                return;
+            }
+            let outputBoxValue = outputBox.value;
+            let logdata = outputBoxValue + message + "\n"
+            outputBox.value = logdata
+            outputBox.scrollTop = outputBox.scrollHeight;
+        }
+
+        function checkTypeAsString() {
+            if (hasTypeAsString !== "not set") {
+                return;
+            }
+
+            let thead = document.querySelector("#editableTable thead");
+            if (!thead) {
+                console.error("🚨 Table head not found!");
+                return;
+            }
+
+            let headerRows = thead.getElementsByTagName("tr");
+            let lastHeaderRow = headerRows[headerRows.length - 1];
+
+            if (!lastHeaderRow) {
+                console.error("🚨 No headers found in the last row!");
+                return;
+            }
+
+            let headers = [...lastHeaderRow.children].map(th => th.textContent.trim());
+
+
+            hasTypeAsString = headers.includes("TypeAsString") ? "true" : "false";
+
+        }
+
+
+        function updateDropdownState(rowIndex) {
+            let newContent = document.getElementById("NewContent-" + rowIndex);
+            let tableSelect = document.getElementById("tableSelect-" + rowIndex);
+
+            if (!newContent || !tableSelect) {
+                console.warn("⚠️ Missing required elements for row ${rowIndex}");
+                return;
+            }
+
+            if (hasTypeAsString === "not set") {
+                checkTypeAsString();
+            }
+
+
+            // ✅ Fetch TypeAsString value only if the column exists
+            let typeAsStringElement = document.getElementById("TypeAsString-" + rowIndex);
+
+            if (!typeAsStringElement && hasTypeAsString === "true") {
+                console.warn("🚨 TypeAsString element missing for row ${rowIndex}!");
+                return; // ✅ Prevent errors if TypeAsString column is expected but missing
+            }
+
+            let typeAsString = hasTypeAsString === "true" && typeAsStringElement ? typeAsStringElement.value.trim() : "(Not Present)";
+
+
+            // ✅ Enable dropdowns only for 1:1 or n:1 AND when TypeAsString is NOT "Choice" or "MultiChoice"
+            let shouldEnable = (newContent.value === "1:1" || newContent.value === "n:1") &&
+                !(typeAsString === "Choice" || typeAsString === "MultiChoice");
+
+            tableSelect.disabled = !shouldEnable;
+
+        }
+
+        function updateAllDropdownStates() {
+            document.querySelectorAll("tr[id^='row-']").forEach(row => {
+                let rowIndex = row.id.replace("row-", "");
+                updateDropdownState(rowIndex);
+            });
+        }
+
+        // REFACTORED: This single function now renders the table from the client-side 'tableData' array.
+        // It replaces initialData(), initialData2(), and refreshTable().
+        function renderTable() {
+            const data = tableData; // Use the global client-side data store
+
+            let thead = document.querySelector("#editableTable thead");
+            let headerRows = thead.getElementsByTagName("tr");
+            let lastHeaderRow = headerRows[headerRows.length - 1];
+            let tableBody = document.querySelector("#editableTable tbody");
+
+            // Clear previous content
+            lastHeaderRow.innerHTML = "";
+            tableBody.innerHTML = "";
+
+            if (data.length === 0) {
+                return; // Exit if no data
+            }
+
+            // Dynamically create headers from the first data object
+            const headers = Object.keys(data[0]);
+
+            // Populate header row
+            lastHeaderRow.innerHTML = "<th>Actions</th>"; // Keep Actions column
+            headers.forEach(header => {
+                if (header === "NewContentUse") return; // This property is being removed
+
+                // Format the header for display
+                let displayName = header;
+                if (header === "NewCaptions") {
+                    displayName = "Caption"; // Special case for "NewCaptions"
+                } else if (header.startsWith("New")) {
+                    displayName = header.substring(3); // Remove "New" prefix
+                }
+
+                let th = document.createElement("th");
+                th.textContent = displayName;
+                lastHeaderRow.appendChild(th);
+            });
+
+            data.forEach((row, rowIndex) => {
+                let tr = document.createElement("tr");
+                tr.id = "row-" + rowIndex;
+
+                let actionsTd = document.createElement("td");
+                let deleteButton = document.createElement("button");
+                deleteButton.textContent = "Delete";
+                deleteButton.onclick = function () {
+                    deleteRow(rowIndex);
+                };
+                actionsTd.appendChild(deleteButton);
+                tr.appendChild(actionsTd);
+
+                headers.forEach(key => {
+                    if (key === "NewContentUse") return; // This property is being removed
+                    let td = document.createElement("td");
+
+                    if (key === "NewCaptions") {
+                        let input = document.createElement("input");
+                        input.type = "text";
+                        input.value = row[key];
+                        input.classList.add("validate");
+                        input.required = true;
+                        input.id = key + "-" + rowIndex;
+                        input.onchange = function () {
+                            updateField(rowIndex, "NewCaptions", this.value);
+                            updateField(rowIndex, "NewName", toSnakeCase(this.value));
+                            validateCreateButton();
+                        };
+                        td.appendChild(input);
+                    } else if (key === "NewName") {
+                        let input = document.createElement("input");
+                        input.type = "text";
+                        input.value = row[key];
+                        input.classList.add("validate");
+                        input.required = true;
+                        input.id = key + "-" + rowIndex;
+                        input.onchange = function () {
+                            updateField(rowIndex, key, this.value);
+                            validateCreateButton();
+                        };
+                        td.appendChild(input);
+                    } else if (key === "NewContent") {
+                        let select = document.createElement("select");
+                        select.id = "NewContent-" + rowIndex;
+                        select.classList.add("validate");
+                        select.required = true;
+                        select.onchange = function () {
+                            updateField(rowIndex, key, this.value);
+                            validateCreateButton();
+                            updateDropdownState(rowIndex);
+                        };
+
+                        let option = document.createElement("option");
+                        option.value = "";
+                        option.textContent = "Please select content";
+                        select.appendChild(option);
+
+                        rei3Types.forEach(type => {
+                            let opt = document.createElement("option");
+                            opt.value = type;
+                            opt.textContent = type;
+                            if (type === row[key]) {
+                                opt.selected = true;
+                            }
+                            select.appendChild(opt);
+                        });
+
+                        td.appendChild(select);
+                    } else if (key === "NewTableLookUp") {
+                        let select = document.createElement("select");
+                        select.id = "tableSelect-" + rowIndex;
+                        select.classList.add("validate");
+                        select.required = true;
+                        select.onchange = function () {
+                            updateField(rowIndex, key, this.value);
+                            validateCreateButton();
+                        };
+
+                        let option = document.createElement("option");
+                        option.value = "";
+                        option.textContent = "Select a Table";
+                        select.appendChild(option);
+
+                        td.appendChild(select);
+                    } else if (key === "NewNullable" || key === "NewEncrypted") {
+                        let select = document.createElement("select");
+                        select.id = key + "-" + rowIndex;
+                        select.onchange = function () {
+                            updateField(rowIndex, key, this.value);
+                        };
+
+                        ["true", "false"].forEach(value => {
+                            let option = document.createElement("option");
+                            option.value = value;
+                            option.textContent = value.charAt(0).toUpperCase() + value.slice(1);
+                            if (value === (row[key] || "false").toString()) {
+                                option.selected = true;
+                            }
+                            select.appendChild(option);
+                        });
+
+                        td.appendChild(select);
+                    } else if (key === "NewOnUpdate" || key === "NewOnDelete") {
+                        let select = document.createElement("select");
+                        select.id = key + "-" + rowIndex;
+                        select.onchange = function () {
+                            updateField(rowIndex, key, this.value);
+                            validateCreateButton();
+                        };
+
+                        // Add a blank option first for when it's not required or not yet selected.
+                        select.innerHTML = '<option value="">Select an action</option>';
+
+                        breakActions.forEach(action => {
+                            let opt = document.createElement("option");
+                            opt.value = action;
+                            opt.textContent = action;
+                            select.appendChild(opt);
+                        });
+
+                        // A field is a lookup if its content type is '1:1' or 'n:1'.
+                        const isLookup = row.NewContent === '1:1' || row.NewContent === 'n:1';
+                        if (isLookup) {
+                            select.classList.add("validate");
+                            select.required = true;
+                            // Set value from data. If data is null, it will correctly select the blank option.
+                            select.value = row[key] || "";
+                        } else {
+                            select.disabled = true;
+                            select.required = false;
+                            select.classList.remove("validate");
+                            // For disabled dropdowns, always show the placeholder text.
+                            select.value = "";
+                        }
+
+                        td.appendChild(select);
+                    } else if (key === "NewLength" || key === "NewLengthFract" || key === "NewDef") {
+                        let input = document.createElement("input");
+                        input.id = key + "-" + rowIndex;
+                        input.type = "text";
+                        input.value = row[key];
+                        input.onchange = function () {
+                            updateField(rowIndex, key, this.value);
+                        };
+                        td.appendChild(input);
+                    } else if (key === "TypeAsString") {
+                        let input = document.createElement("input");
+                        input.id = key + "-" + rowIndex;
+                        input.type = "text";
+                        input.value = row[key];
+                        input.readOnly = true;
+                        td.appendChild(input);
+                    } else {
+                        let input = document.createElement("input");
+                        input.type = "text";
+                        input.value = row[key];
+                        input.readOnly = true;
+                        td.appendChild(input);
+                    }
+
+                    tr.appendChild(td);
+                });
+
+                tableBody.appendChild(tr);
+            });
+            updateAllDropdownStates(); // Ensure dropdown states are updated
+            validateCreateButton();
+        }
+
+        // REWRITTEN: Manipulates the client-side 'tableData' array instead of calling the backend.
+        function addRow() {
+            const newRow = {
+                "NewCaptions": "",
+                "NewName": "",
+                "NewContent": "text",
+                "NewTableLookUp": "",
+                "NewNullable": "true",
+                "NewEncrypted": "false",
+                "NewOnUpdate": null,
+                "NewOnDelete": null,
+                "NewLength": "0",
+                "NewLengthFract": "0",
+                "NewDef": "",
+                "InternalName": "",
+                "TypeAsString": "",
+            };
+            tableData.push(newRow);
+            renderTable(); // Re-render the table with the new row
+        }
+
+        // REWRITTEN: Manipulates the client-side 'tableData' array.
+        function deleteRow(rowIndex) {
+            if (rowIndex >= 0 && rowIndex < tableData.length) {
+                tableData.splice(rowIndex, 1);
+                renderTable(); // Re-render
+            } else {
+                console.error(`Invalid row index ${rowIndex} for deletion.`);
+            }
+        }
+
+        async function fetchApplicationSchemas() {
+            if (!currentConnection.server) {
+                throw new Error("Cannot fetch schemas, not connected to a server.");
+            }
+            const server = currentConnection.server;
+
+            // Fetch server info to get module metadata (public, no auth token needed)
+            const serverInfoTransactionNr = Date.now() + Math.floor(Math.random() * 1000);
+            const serverInfoRequest = {
+                TransactionNr: serverInfoTransactionNr,
+                Requests: [{ ressource: "public", Action: "get", payload: null }]
+            };
+            const serverInfo = await sendWebSocketRequest(serverInfoRequest);
+
+            if (!serverInfo || typeof serverInfo.moduleIdMapMeta !== 'object' || serverInfo.moduleIdMapMeta === null) {
+                throw new Error('Could not find a valid moduleIdMapMeta object in server info response.');
+            }
+
+            const moduleMetaArray = Object.values(serverInfo.moduleIdMapMeta);
+            logBoxMessage(`Found ${moduleMetaArray.length} modules. Re-fetching schemas...`);
+
+            const schemaFetchPromises = moduleMetaArray.map(moduleMeta => {
+                const originalSchemaUrl = `http://${server.serverAddress}:${server.port}/cache/download/schema.json?module_id=${moduleMeta.id}&date=${moduleMeta.dateChange}`;
+                const schemaUrl = `/proxy-schema?url=${encodeURIComponent(originalSchemaUrl)}`;
+                return fetch(schemaUrl).then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error ${response.status} for module ${moduleMeta.id}`);
+                    }
+                    return response.json();
+                }).catch(error => {
+                    console.error(`Failed to fetch or parse schema from ${schemaUrl}. Error:`, error);
+                    throw error;
+                });
+            });
+
+            // Update global modulesData
+            modulesData = await Promise.all(schemaFetchPromises);
+
+            // Re-populate menus that depend on this data
+            populateApplicationsMenu();
+            const selectedModule = modulesData.find(module => module.id === currentApplicationId);
+            if (selectedModule) {
+                populateCopyRelationMenu(selectedModule.relations);
+                updateCopyRelationsDropdown(selectedModule.relations);
+            }
+        }
+
+        /**
+         * Creates a relation, polls to discover its new ID, adds attributes, and reloads the schema.
+         * @param {string} name - The name of the new relation.
+         * @param {Array} attributes - An array of attribute payloads to add to the relation.
+         * @returns {Promise<object>} The full relation object from the reloaded schema.
+         */
+        async function createRelationAndReload(name, attributes = [], targetModuleId) {
+            const moduleId = targetModuleId || currentApplicationId;
+            if (!moduleId) throw new Error("Cannot create relation, no module ID specified.");
+            logBoxMessage(`-- Starting creation for relation '${name}' in module ${moduleId}...`);
+
+            // 1. Create the relation shell. The response is expected to be {} on success.
+            const relationPayload = { id: null, moduleId: moduleId, name };
+            await sendWsRequest('relation', 'set', relationPayload);
+            logBoxMessage(`--- Relation shell for '${name}' created. Now discovering its new ID...`);
+
+            // 2. Poll for the new relation by NAME to discover its ID.
+            const maxRetries = 10;
+            const retryDelay = 1000; // 1 second
+            let newRelation = null;
+            let newRelationId = null;
+
+            for (let i = 0; i < maxRetries; i++) {
+                logBoxMessage(`--- Polling for new relation, attempt ${i + 1}/${maxRetries}...`);
+                // Trigger a schema reload on the server, then wait briefly before fetching.
+                await sendWsRequest('schema', 'reload', { moduleId: moduleId });
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                await fetchApplicationSchemas();
+
+                const currentApp = modulesData.find(m => m.id === moduleId);
+                // Find the newly created relation by its unique NAME.
+                newRelation = currentApp?.relations.find(r => r.name === name);
+
+                if (newRelation) {
+                    newRelationId = newRelation.id;
+                    logBoxMessage(`--- Found new relation '${name}' with ID: ${newRelationId}.`);
+                    break; // Success! Exit the loop.
+                }
+            }
+
+            // Check if we found the relation ID after polling.
+            if (!newRelationId) {
+                throw new Error(`Could not find newly created relation '${name}' in schema after creation. The server may be slow or an error occurred.`);
+            }
+
+            // 3. Add all attributes to the new relation using the discovered ID.
+            logBoxMessage(`--- Adding ${attributes.length} attributes...`);
+            for (const attr of attributes) {
+                attr.relationId = newRelationId; // Assign the discovered relation ID
+                await sendWsRequest('attribute', 'set', attr);
+                logBoxMessage(`--- Attribute '${attr.name}' added.`);
+            }
+
+            // 4. Final schema reload to ensure attributes are included, and re-fetch for the client.
+            logBoxMessage(`--- All attributes added. Finalizing and reloading schema...`);
+            await sendWsRequest('schema', 'reload', { moduleId: moduleId });
+            await fetchApplicationSchemas();
+
+            // 5. Find and return the final, complete relation object from the updated client data.
+            const finalApp = modulesData.find(m => m.id === moduleId);
+            const finalRelation = finalApp?.relations.find(r => r.id === newRelationId);
+
+            if (!finalRelation) {
+                // This should be very unlikely, but is a good safeguard.
+                throw new Error(`Critical error: Could not re-locate relation '${name}' after adding attributes.`);
+            }
+
+            logBoxMessage(`--- Successfully created relation '${name}'.`);
+            return finalRelation;
+        }
+
+        async function createAndMapLookupRelations(choiceFields) {
+            const mainRelationName = document.getElementById("NewName").value;
+
+            // Use the new helper to create each lookup relation and its attribute.
+            for (const field of choiceFields) {
+                const newLookupRelationName = `${toSnakeCase(mainRelationName)}_${toSnakeCase(field.NewName)}_lookup`;
+
+                const valueAttribute = {
+                    id: null,
+                    relationshipId: null,
+                    name: 'value',
+                    content: 'text',
+                    contentUse: 'default',
+                    length: 0,
+                    lengthFract: 0,
+                    nullable: false,
+                    encrypted: false,
+                    def: '',
+                    onUpdate: null,
+                    onDelete: null,
+                    captions: { relationTitle: { 'en_us': 'Value' } }
+                };
+
+                const newLookupRelation = await createRelationAndReload(newLookupRelationName, [valueAttribute], currentApplicationId);
+
+                const originalRow = tableData.find(row => row.InternalName === field.InternalName);
+                if (originalRow) {
+                    originalRow.NewTableLookUp = newLookupRelation.id;
+                    logBoxMessage(`-- Mapped '${field.NewCaptions}' to new relation ID: ${newLookupRelation.id}`);
+                } else {
+                    logBoxMessage(`⚠️ Warning: Could not find original row for '${field.NewCaptions}' to map lookup ID.`);
+                }
+            }
+        }
+
+        // REWRITTEN: Sends data directly to the R3 server API.
+        async function CreateRelation() {
+            if (!currentConnection.token || !currentConnection.server) {
+                alert("You are not connected to a server. Please connect first.");
+                return;
+            }
+
+            let editableTable = document.getElementById("editableTable");
+            editableTable.style.display = "none";
+            let logBox = document.getElementById("outputBox");
+            logBox.style.display = "initial";
+            logBoxMessage("***CLEAR***")
+            logBoxMessage("Starting relation creation process...")
+
+            // Handle special SharePoint Choice/MultiChoice fields by pre-creating lookup tables
+            const choiceFields = tableData.filter(row => row.TypeAsString === 'Choice' || row.TypeAsString === 'MultiChoice');
+            if (choiceFields.length > 0) {
+                logBoxMessage(`Found ${choiceFields.length} Choice/MultiChoice fields. Pre-creating lookup tables...`);
+                try {
+                    await createAndMapLookupRelations(choiceFields);
+                    logBoxMessage("✅ Lookup tables created and mapped successfully.");
+                } catch (error) {
+                    logBoxMessage(`❌ Failed to create lookup tables: ${error.message}`);
+                    console.error("Error during lookup table creation:", error);
+                    showEditableTable(); // Re-show table on failure
+                    return;
+                }
+            }
+
+            const newRelationName = document.getElementById("NewName").value;
+
+            try {
+                // Construct attributes payload from client-side tableData
+                const attributes = tableData.map(row => {
+                    const { content, contentUse } = getRei3ApiContentTypes(row.NewContent);
+                    return {
+                        id: null,
+                        relationshipId: (row.NewContent === '1:1' || row.NewContent === 'n:1') ? row.NewTableLookUp : null,
+                        name: row.NewName,
+                        content: content,
+                        contentUse: contentUse,
+                        length: parseInt(row.NewLength, 10) || 0,
+                        lengthFract: parseInt(row.NewLengthFract, 10) || 0,
+                        nullable: row.NewNullable === 'true',
+                        encrypted: row.NewEncrypted === 'true',
+                        def: row.NewDef,
+                        onUpdate: row.NewOnUpdate,
+                        onDelete: row.NewOnDelete,
+                        captions: { attributeTitle: { 'en_us': row.NewCaptions } }
+                    }
+                });
+
+                await createRelationAndReload(newRelationName, attributes, currentApplicationId);
+                logBoxMessage(`✅ Main relation '${newRelationName}' and all attributes created successfully.`);
+                alert("Relation created successfully!");
+                cancelTable();
+
+            } catch (error) {
+                console.error("❌ Error creating relation:", error);
+                logBoxMessage(`❌ Relation creation failed: ${error.message}`);
+                alert(`Relation creation failed: ${error.message}`);
+                showEditableTable(); // Re-show table on failure
+            }
+        }
+
+        // REWRITTEN: Updates the client-side 'tableData' array. Now uses column name.
+        function updateField(rowIndex, colName, value) {
+            if (rowIndex >= 0 && rowIndex < tableData.length) {
+                if (tableData[rowIndex].hasOwnProperty(colName)) {
+                    tableData[rowIndex][colName] = value;
+
+                    if (colName === 'NewContent') {
+                        const isLookup = value === '1:1' || value === 'n:1';
+                        if (isLookup) {
+                            // If changing to a lookup, set a default valid action.
+                            tableData[rowIndex]['NewOnUpdate'] = 'CASCADE';
+                            tableData[rowIndex]['NewOnDelete'] = 'SET NULL';
+                        } else {
+                            // If not a lookup, the value must be null for the API.
+                            tableData[rowIndex]['NewOnUpdate'] = null;
+                            tableData[rowIndex]['NewOnDelete'] = null;
+                        }
+                        // Re-render the table to apply disabled state and new values.
+                        renderTable();
+                    }
+
+                    // If a caption change, auto-update the name and re-render
+                    if (colName === 'NewCaptions') {
+                        tableData[rowIndex]['NewName'] = toSnakeCase(value);
+                        renderTable();
+                    }
+                    validateCreateButton();
+                } else {
+                    console.error(`Column ${colName} does not exist in data model.`);
+                }
+            }
+        }
+        function validateCreateButton() {
+
+            document.getElementById("createButton").disabled = !!document.querySelector(".validate:invalid");
+        }
+
+        function updateDropdownState(rowIndex) {
+
+            let newContent = document.getElementById("NewContent-" + rowIndex);
+            let newContentValue = newContent.value;
+
+            let tableSelect = document.getElementById("tableSelect-" + rowIndex);
+
+            // Ensure TypeAsString is correctly fetched
+            let typeAsStringElement = document.getElementById("TypeAsString-" + rowIndex);
+            let typeAsString = typeAsStringElement ? typeAsStringElement.value.trim() : "";
+
+            if (!newContent || !tableSelect || !typeAsStringElement) {
+                console.warn("Missing elements for row:", rowIndex);
+                return;
+            }
+
+            if (newContentValue == "1:1" || newContentValue == "n:1") {
+                updateExistingRelations(rowIndex);
+            }
+
+            let enableDropdowns = (newContentValue === "1:1" || newContentValue === "n:1") &&
+                (typeAsString !== "Choice" && typeAsString !== "MultiChoice");
+
+            tableSelect.disabled = !enableDropdowns;
+
+
+        }
+
+        function updateAllDropdownStates() {
+
+            document.querySelectorAll("tr[id^='row-']").forEach(row => {
+                let rowIndex = row.id.replace("row-", "");
+                updateDropdownState(rowIndex);
+            });
+        }
+
+        function toSnakeCase(text) {
+            let outputText = text
+                .toLowerCase()                   // Convert to lowercase
+                .replace(/[^a-z0-9\s]/g, '')     // Remove special characters
+                .trim()                          // Trim leading/trailing spaces
+                .replace(/\s+/g, '_');           // Replace spaces with underscores
+            return outputText;
+        }
+
+
+        function openSharePointAPI() {
+
+            let domain = document.getElementById("SharepointDomain").value;
+            let site = document.getElementById("SharepointSite").value;
+            let list = document.getElementById("ListName").value;
+
+            if (!domain || !site || !list) {
+                alert("Please fill in all fields.");
+                return;
+            }
+
+            let apiURL = "https://" + domain + ".sharepoint.com/sites/" + site + "/_api/web/lists/getbytitle('" + encodeURIComponent(list) + "')/fields";
+
+            // Open the API in a new tab for the user to copy/paste from.
+            window.open(apiURL, "_blank");
+        }
+        function getRei3ApiContentTypes(uiContentType) {
+            let content = uiContentType;
+            let contentUse = 'default';
+
+            switch (uiContentType) {
+                // text uses
+                case "richtext": content = "text"; contentUse = "richtext"; break;
+                case "textarea": content = "text"; contentUse = "textarea"; break;
+                case "color": content = "varchar"; contentUse = "color"; break;
+                case "drawing": content = "text"; contentUse = "drawing"; break;
+                case "iframe": content = "text"; contentUse = "iframe"; break;
+
+                // integer/bigint uses
+                case "date": content = "bigint"; contentUse = "date"; break;
+                case "datetime": content = "bigint"; contentUse = "datetime"; break;
+                case "time": content = "integer"; contentUse = "time"; break;
+                case "number": content = "integer"; break;
+
+                // other types that map to a different content type
+                case "decimal": content = "numeric"; break;
+                case "float": content = "real"; break;
+            }
+            return { content, contentUse };
+        }
+
+        function processJsonDataForSelection() {
+            let responseText = document.getElementById("jsonApiResponse").value;
+            if (!responseText.trim()) {
+                alert("Please paste the JSON data before submitting.");
+                return;
+            }
+            try {
+                const jsonData = JSON.parse(responseText);
+                if (!Array.isArray(jsonData) || jsonData.length === 0) {
+                    alert("JSON must be an array of objects and cannot be empty.");
+                    return;
+                }
+
+                // Get headers from the keys of the first object
+                const headers = Object.keys(jsonData[0]);
+
+                // Transpose data to work with columns, similar to CSV import
+                const columns = headers.map(header => jsonData.map(row => row[header]));
+
+                // Process each column to create a new field definition
+                const newTableData = headers.map((header, index) => {
+                    const columnValues = columns[index];
+                    const inferredType = inferColumnType(columnValues);
+                    const isLookup = inferredType === '1:1' || inferredType === 'n:1';
+
+                    return {
+                        "NewCaptions": header.trim(),
+                        "NewName": toSnakeCase(header.trim()),
+                        "NewContent": inferredType,
+                        "NewTableLookUp": "",
+                        "NewNullable": "true",
+                        "NewEncrypted": "false",
+                        "NewOnUpdate": isLookup ? 'CASCADE' : null,
+                        "NewOnDelete": isLookup ? 'SET NULL' : null,
+                        "NewLength": "0",
+                        "NewLengthFract": "0",
+                        "NewDef": "",
+                        "InternalName": "", // Not applicable for JSON import
+                        "TypeAsString": "", // Not applicable for JSON import
+                    };
+                });
+
+                showFieldSelectionModal(newTableData, 'json');
+                logBoxMessage(`✅ Parsed ${headers.length} fields from JSON data. Please select which to import.`);
+            } catch (error) {
+                alert("Failed to parse JSON. Please check the input format. " + error.message);
+                console.error("❌ Error processing JSON:", error);
+            }
+        }
+
+        function showFieldSelectionModal(parsedFields, importSource = 'unknown') {
+            pendingImportData = parsedFields; // Store for later
+            const container = document.getElementById('fieldListContainer');
+            container.innerHTML = ''; // Clear previous fields
+
+            if (parsedFields.length === 0) {
+                container.innerHTML = '<p>No importable fields found in the provided data.</p>';
+            } else {
+                parsedFields.forEach((field, index) => {
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.style.display = 'flex';
+                    fieldDiv.style.justifyContent = 'space-between';
+                    fieldDiv.style.alignItems = 'center';
+                    fieldDiv.style.padding = '5px';
+                    fieldDiv.style.borderBottom = '1px solid #444';
+
+                    const label = document.createElement('label');
+                    // Use a unique ID for the checkbox to associate the label correctly
+                    const checkboxId = `field-checkbox-${index}`;
+                    label.htmlFor = checkboxId;
+                    label.textContent = field.NewCaptions || `Field ${index + 1}`;
+                    label.style.cursor = 'pointer';
+                    label.style.flexGrow = '1';
+                    label.style.margin = '0'; // Reset margin for label
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = checkboxId;
+                    checkbox.dataset.index = index;
+                    // By default, check all fields. For SharePoint, uncheck ignored fields.
+                    checkbox.checked = (importSource === 'sharepoint' && sharepointFieldsToIgnore.has(field.NewCaptions)) ? false : true;
+                    checkbox.style.width = 'auto'; // Override global input style
+
+                    fieldDiv.appendChild(label);
+                    fieldDiv.appendChild(checkbox);
+                    container.appendChild(fieldDiv);
+                });
+            }
+
+            document.getElementById('fieldSelectionModal').style.display = 'block';
+        }
+
+        function processSharepointDataForSelection() {
+            let responseText = document.getElementById("apiResponse").value;
+            let listName = document.getElementById("ListName").value; // ✅ Get ListName
+
+            if (!responseText.trim()) {
+                alert("Please paste the SharePoint API response before submitting.");
+                return;
+            }
+
+            if (!listName.trim()) {
+                alert("Please enter the List Name.");
+                return;
+            }
+
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(responseText, "application/xml");
+                if (xmlDoc.querySelector("parsererror")) throw new Error("Failed to parse XML.");
+
+                const fields = xmlDoc.querySelectorAll("entry");
+                const parsedData = [];
+
+                fields.forEach(field => {
+                    const properties = field.querySelector("m\\:properties, properties");
+                    if (!properties) return;
+
+                    const getProp = (name) => (properties.querySelector(`d\\:${name}, ${name}`)?.textContent || '');
+                    if (getProp('Hidden') === 'true' || !getProp('InternalName')) return;
+
+                    const typeAsString = getProp('TypeAsString');
+                    let newContent = 'text'; // Default value
+                    let lengthFract = "0";   // Default value
+
+                    switch (typeAsString) {
+                        case 'Number':
+                            const decimals = getProp('Decimals');
+                            if (decimals && parseInt(decimals, 10) > 0) {
+                                newContent = 'decimal';
+                                lengthFract = decimals;
+                            } else {
+                                newContent = 'number';
+                            }
+                            break;
+                        case 'AverageRating':
+                        case 'RatingCount':
+                        case 'Likes':
+                            newContent = 'number';
+                            break;
+                        case 'Currency':
+                            newContent = 'decimal';
+                            lengthFract = getProp('Decimals') || "2"; // Default to 2 for currency
+                            break;
+                        case 'DateTime':
+                            // DisplayFormat: 0 for DateOnly, 1 for DateTime
+                            const displayFormat = getProp('DisplayFormat');
+                            if (displayFormat === '0' || getProp('Format') === 'DateOnly') {
+                                newContent = 'date';
+                            } else {
+                                newContent = 'datetime';
+                            }
+                            break;
+                        case 'Time':
+                            newContent = 'time';
+                            break;
+                        case 'Boolean':
+                            newContent = 'boolean';
+                            break;
+                        case 'Note':
+                            newContent = getProp('RichText') === 'TRUE' ? 'richtext' : 'textarea';
+                            break;
+                        case 'URL':
+                            newContent = getProp('Format') === 'Image' ? 'files' : 'text';
+                            break;
+                        case 'Thumbnail':
+                            newContent = 'files';
+                            break;
+                        case 'User':
+                        case 'Geolocation':
+                            newContent = 'text';
+                            break;
+                        case 'Lookup':
+                        case 'Choice':
+                        case 'MultiChoice':
+                        case 'LookupMulti':
+                        case 'OutcomeChoice':
+                            newContent = 'n:1';
+                            break;
+                    }
+
+                    const isLookup = newContent === '1:1' || newContent === 'n:1';
+
+                    parsedData.push({
+                        "NewCaptions": getProp('Title'),
+                        "NewName": toSnakeCase(getProp('Title')),
+                        "NewContent": newContent,
+                        "NewTableLookUp": "",
+                        "NewNullable": "true",
+                        "NewEncrypted": "false",
+                        "NewOnUpdate": isLookup ? 'CASCADE' : null,
+                        "NewOnDelete": isLookup ? 'SET NULL' : null,
+                        "NewLength": "0",
+                        "NewLengthFract": lengthFract,
+                        "NewDef": "", // Ignore SharePoint default values as they are often in an incompatible format.
+                        "InternalName": getProp('InternalName'),
+                        "TypeAsString": typeAsString,
+                    });
+                });
+
+                // Store list name to be used after selection
+                pendingImportListName = listName;
+                showFieldSelectionModal(parsedData, 'sharepoint');
+
+            } catch (error) {
+                alert(`Error processing SharePoint XML: ${error.message}`);
+                console.error("❌ Error in submitData:", error);
+            }
+        }
+
+        function importSelectedFields() {
+            const checkboxes = document.querySelectorAll('#fieldListContainer input[type="checkbox"]');
+            const selectedFields = [];
+
+            checkboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    const index = parseInt(checkbox.dataset.index, 10);
+                    if (pendingImportData && pendingImportData[index]) {
+                        selectedFields.push(pendingImportData[index]);
+                    }
+                }
+            });
+
+            if (selectedFields.length === 0) {
+                alert("Please select at least one field to import.");
+                return;
+            }
+
+            tableData = selectedFields;
+            if (pendingImportListName) document.getElementById("NewName").value = toSnakeCase(pendingImportListName);
+
+            renderTable();
+            showEditableTable();
+            closeModalsOnImport();
+
+        }
+
+        function handleCsvImport() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv';
+
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = event => {
+                    const csvString = event.target.result;
+                    processCsvData(csvString);
+                };
+                reader.readAsText(file);
+            };
+
+            input.click();
+        }
+
+        function processCsvData(csvString) {
+            // 1. Parse CSV (Note: This is a simple parser and may not handle complex CSVs with quoted commas)
+            const rows = csvString.trim().split(/\r?\n/);
+            if (rows.length < 2) {
+                alert("CSV file must have at least a header row and one data row.");
+                return;
+            }
+            const headers = rows[0].split(',');
+            const dataRows = rows.slice(1).map(row => row.split(','));
+
+            // 2. Transpose data to work with columns
+            const columns = headers.map((_, colIndex) => dataRows.map(row => row[colIndex] || ''));
+
+            // 3. Process each column to create a new field
+            const newTableData = headers.map((header, index) => {
+                const columnValues = columns[index];
+                const inferredType = inferColumnType(columnValues);
+                const isLookup = inferredType === '1:1' || inferredType === 'n:1';
+
+                return {
+                    "NewCaptions": header.trim(),
+                    "NewName": toSnakeCase(header.trim()),
+                    "NewContent": inferredType,
+                    "NewTableLookUp": "",
+                    "NewNullable": "true",
+                    "NewEncrypted": "false",
+                    "NewOnUpdate": isLookup ? 'CASCADE' : null,
+                    "NewOnDelete": isLookup ? 'SET NULL' : null,
+                    "NewLength": "0",
+                    "NewLengthFract": "0",
+                    "NewDef": "",
+                    "InternalName": "", // Not applicable for CSV import
+                    "TypeAsString": "", // Not applicable for CSV import
+                };
+            });
+
+            // 4. Update global state and UI
+            showFieldSelectionModal(newTableData, 'csv');
+            logBoxMessage(`✅ Parsed ${headers.length} columns from CSV file. Please select which to import.`);
+        }
+
+        function inferColumnType(values) {
+            // Handle numbers: A value is considered a number if it's an actual number,
+            // or a non-empty string that can be converted to a number.
+            if (values.every(v => v === null || v === '' || typeof v === 'number' ||
+                (typeof v === 'string' && v.trim() !== '' && !isNaN(Number(v))))) {
+                return 'number';
+            }
+
+            // Handle booleans: A value is a boolean if it's an actual boolean,
+            // or a string representation of one.
+            const booleanStrings = ['true', 'false', '1', '0', 'yes', 'no'];
+            if (values.every(v => v === null || v === '' || typeof v === 'boolean' ||
+                (typeof v === 'string' && booleanStrings.includes(v.trim().toLowerCase())))) {
+                return 'boolean';
+            }
+
+            // Future checks for date, etc., could go here.
+            return 'text'; // Default to text if no other type matches
+        }
+
+        function handleSqliteImport() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.sqlite,.db,.sqlite3';
+
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (file) {
+                    processSqliteFile(file);
+                }
+            };
+            input.click();
+        }
+
+        async function processSqliteFile(file) {
+            logBoxMessage(`Reading SQLite file '${file.name}'...`);
+            try {
+                const fileBuffer = await file.arrayBuffer();
+
+                // Initialize sql.js
+                const SQL = await initSqlJs({
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
+                });
+
+                // Load the database
+                sqliteDb = new SQL.Database(new Uint8Array(fileBuffer));
+
+                // Get table names
+                const tablesResult = sqliteDb.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';");
+                if (!tablesResult || tablesResult.length === 0 || !tablesResult[0].values) {
+                    throw new Error("No user tables found in the database file.");
+                }
+
+                const tableNames = tablesResult[0].values.flat();
+
+                // Populate and show the selection modal
+                const selectEl = document.getElementById('sqliteTableSelect');
+                selectEl.innerHTML = '';
+                tableNames.forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    selectEl.appendChild(option);
+                });
+
+                document.getElementById('sqliteTableSelectionModal').style.display = 'block';
+                logBoxMessage("Please select a table to import.");
+
+            } catch (e) {
+                alert("Failed to read SQLite database file. It may be corrupted or an invalid format. " + e.message);
+                console.error(e);
+                logBoxMessage("❌ Failed to process SQLite file.");
+                if (sqliteDb) {
+                    sqliteDb.close();
+                    sqliteDb = null;
+                }
+            }
+        }
+
+        function importSchemaFromSqliteSelection() {
+            if (!sqliteDb) {
+                alert("Database instance not found. Please re-upload the file.");
+                return;
+            }
+
+            const tableName = document.getElementById('sqliteTableSelect').value;
+            if (!tableName) {
+                alert("Please select a table.");
+                return;
+            }
+
+            const schemaResult = sqliteDb.exec(`PRAGMA table_info('${tableName}');`);
+            if (!schemaResult || schemaResult.length === 0) {
+                alert(`Could not retrieve schema for table '${tableName}'.`);
+                return;
+            }
+
+            const columns = schemaResult[0].values;
+            tableData = columns
+                .filter(col => col[1].toLowerCase() !== 'id') // Filter out 'id' columns
+                .map(col => {
+                    // col is an array: [cid, name, type, notnull, dflt_value, pk]
+                    const [colName, colType, notNull, defaultValue] = [col[1], col[2], col[3] === 1, col[4]];
+                    const { newContent, newLengthFract } = mapSqliteTypeToRei3(colType);
+                    const isLookup = newContent === '1:1' || newContent === 'n:1';
+                    return {
+                        "NewCaptions": colName, "NewName": toSnakeCase(colName), "NewContent": newContent, "NewTableLookUp": "",
+                        "NewNullable": (!notNull).toString(), "NewEncrypted": "false", "NewOnUpdate": isLookup ? 'CASCADE' : null,
+                        "NewOnDelete": isLookup ? 'SET NULL' : null, "NewLength": "0", "NewLengthFract": newLengthFract || "0",
+                        "NewDef": defaultValue || "", "InternalName": "", "TypeAsString": "",
+                    };
+                });
+
+            document.getElementById("NewName").value = toSnakeCase(tableName);
+            renderTable();
+            showEditableTable();
+            closeModal('sqliteTableSelectionModal');
+            sqliteDb.close();
+            sqliteDb = null;
+        }
+
+        function mapSqliteTypeToRei3(sqliteType) {
+            const type = sqliteType.toUpperCase();
+            if (type.includes('INT')) return { newContent: 'number' };
+            if (type.includes('CHAR') || type.includes('TEXT') || type.includes('CLOB')) return { newContent: 'text' };
+            if (type.includes('REAL') || type.includes('FLOA') || type.includes('DOUB')) return { newContent: 'float' };
+            if (type.includes('DECIMAL') || type.includes('NUMERIC')) {
+                const match = type.match(/\(\d+,\s*(\d+)\)/);
+                return { newContent: 'decimal', newLengthFract: match ? match[1] : "2" };
+            }
+            if (type.includes('BOOL')) return { newContent: 'boolean' };
+            if (type.includes('DATE')) return { newContent: 'date' };
+            if (type.includes('DATETIME')) return { newContent: 'datetime' };
+            if (type.includes('BLOB')) return { newContent: 'text' }; // Safest default
+            return { newContent: 'text' }; // Default fallback
+        }
+
+        function loadModules() { }
+
+
+        function closeModalsOnImport() {
+            // Helper to close all modals that could lead to the import flow.
+            closeModal('fieldSelectionModal');
+            closeModal('sharepointModal');
+            closeModal('jsonModal');
+
+            // Clear pending data to prevent re-use
+            pendingImportData = [];
+            pendingImportListName = '';
+        }
+
+        // REWRITTEN: Creates a blank table structure on the client side.
+        function makeBlank() {
+            tableData = []; // Clear any existing data
+            addRow(); // Add one blank row to start
+
+            // Show the container, which will reveal the table rendered by renderTable()
+            document.getElementById("editableTableContainer").style.display = "block";
+            document.getElementById("editableTable").style.display = "table";
+        }
+
+
+        function updateExistingRelations(cell) {
+
+            if (!currentApplicationId) {
+                console.warn("Cannot update relations, no application is selected.");
+                return;
+            }
+
+            let selectedModule = modulesData.find(module => module.id === currentApplicationId);
+            // Use optional chaining and nullish coalescing for safety. This prevents the error if .relations is undefined.
+            existingRelations = selectedModule?.relations ?? [];
+
+            let target = document.getElementById("tableSelect-" + cell)
+            if (!target) return;
+
+            // Clear existing options but keep the placeholder
+            while (target.options.length > 1) {
+                target.remove(1);
+            }
+
+            existingRelations.forEach(item => {
+                let option = document.createElement("option");
+                option.value = item.id;
+                option.textContent = item.name;
+                target.appendChild(option);
+            });
+        }
+        function cancelTable() {
+            tableData = []; // Clear the client-side data array
+
+            let apiResponse = document.getElementById("apiResponse");
+            apiResponse.value = ""
+            cancelSelection()
+        }
+
+
+        function cancelSelection() {
+
+            // This function now just hides all the main views.
+            hideAllViews();
+            // And shows the log box as the default view.
+            logBoxMessage("Operation cancelled.");
+            document.getElementById("outputBox").style.display = "block";
+        }
+
+        function checkCopyButton() {
+            const copyTargetApp = document.getElementById("copyTargetAppDropdown");
+            const copyDD = document.getElementById("copyRelDropdown");
+            const copyNN = document.getElementById("copyRelationNewName");
+            const copyB = document.getElementById("copyRelationButton");
+
+            const copyDDText = copyDD.options[copyDD.selectedIndex].text;
+            const targetAppSelected = copyTargetApp.value !== "";
+            const relationSelected = copyDD.value !== "";
+            const newNameValid = copyNN.value.trim() !== "";
+
+            // If copying to the SAME application, the new name must be different from the source.
+            const isSameApp = copyTargetApp.value === currentApplicationId;
+            const nameIsDuplicate = isSameApp && (toSnakeCase(copyNN.value.trim()) === copyDDText);
+
+            if (targetAppSelected && relationSelected && newNameValid && !nameIsDuplicate) {
+                copyB.disabled = false;
+            } else {
+                copyB.disabled = true;
+            }
+        }
+
+        // REWRITTEN: Creates a perfect replica of a relation by re-creating it and its attributes.
+        async function copyRelation() {
+            if (!currentConnection.token || !currentConnection.server) {
+                closeModal('copyRelationModal');
+                alert("You are not connected to a server. Please connect first.");
+                return;
+            }
+
+            const targetApplicationId = document.getElementById("copyTargetAppDropdown").value;
+            const relationIdToCopy = document.getElementById("copyRelDropdown").value;
+            const newRelationName = toSnakeCase(document.getElementById("copyRelationNewName").value);
+
+            if (!targetApplicationId || !relationIdToCopy || !newRelationName) {
+                alert("Please select a target application, an existing relation, and provide a new name.");
+                return;
+            }
+
+            logBoxMessage(`Attempting to copy relation...`);
+            closeModal('copyRelationModal'); // Close modal to show log box
+
+            try {
+                // 1. Find the source relation and its attributes from the schema data
+                const sourceModule = modulesData.find(m => m.id === currentApplicationId);
+                const sourceRelation = sourceModule?.relations.find(r => r.id === relationIdToCopy);
+
+                if (!sourceRelation || !sourceRelation.attributes) {
+                    throw new Error(`Could not find source relation '${relationIdToCopy}' or its attributes in the schema.`);
+                }
+                logBoxMessage(`-- Found source relation '${sourceRelation.name}' with ${sourceRelation.attributes.length} attributes.`);
+
+                // 2. Prepare the attribute payloads for creation.
+                const attributesToCreate = sourceRelation.attributes
+                    .filter(attr => attr.name !== 'id') // Exclude the special 'id' attribute, which is auto-created.
+                    .map(attr => ({
+                        id: null, // Will be set by the server
+                        relationId: null, // Will be set by the server
+                        relationshipId: attr.relationshipId,
+                        name: attr.name,
+                        content: attr.content,
+                        contentUse: attr.contentUse,
+                        length: attr.length,
+                        lengthFract: attr.lengthFract,
+                        nullable: attr.nullable,
+                        encrypted: attr.encrypted,
+                        def: attr.def,
+                        onUpdate: attr.onUpdate,
+                        onDelete: attr.onDelete,
+                        captions: attr.captions
+                    }));
+
+                // 3. Use the existing robust function to create the new relation and its attributes.
+                await createRelationAndReload(newRelationName, attributesToCreate, targetApplicationId);
+
+                logBoxMessage(`✅ Relation '${newRelationName}' copied successfully.`);
+                alert("Relation copied successfully!");
+            } catch (error) {
+                logBoxMessage(`❌ Error copying relation: ${error.message}`);
+                console.error("❌ Error copying relation:", error);
+                alert(`Error copying relation: ${error.message}`);
+            }
+        }
+
+        function downloadUserCsvTemplate() {
+            const headers = [
+                "name", "pass", "active", "nameDisplay", "nameFore", "nameSur",
+                "email", "department", "organization", "location", "notes",
+                "phoneFax", "phoneLandline", "phoneMobile"
+            ];
+            const csvContent = headers.join(',') + '\n';
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "rei3_user_template.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function handleUserCsvUpload() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv';
+
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = event => {
+                    const csvString = event.target.result;
+                    processUserCsv(csvString);
+                };
+                reader.readAsText(file);
+            };
+
+            input.click();
+        }
+
+        async function processUserCsv(csvString) {
+            const logContainer = document.getElementById('user-creation-log');
+            logContainer.innerHTML = 'Starting user creation process...\n';
+
+            if (!currentConnection.token) {
+                logContainer.innerHTML += 'ERROR: Not connected to a server. Please connect first.';
+                return;
+            }
+
+            const rows = csvString.trim().split(/\r?\n/);
+            if (rows.length < 2) {
+                logContainer.innerHTML += "ERROR: CSV file must have a header row and at least one data row.";
+                return;
+            }
+            const headers = rows[0].split(',').map(h => h.trim());
+            const dataRows = rows.slice(1);
+
+            logContainer.innerHTML += `Found ${dataRows.length} user(s) to create.\n\n`;
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (let i = 0; i < dataRows.length; i++) {
+                const row = dataRows[i].split(',');
+                const userRaw = headers.reduce((obj, header, index) => {
+                    obj[header] = row[index] ? row[index].trim() : '';
+                    return obj;
+                }, {});
+
+                const payload = {
+                    name: userRaw.name, pass: userRaw.pass, active: ['true', '1', 'yes'].includes(userRaw.active.toLowerCase()),
+                    meta: {
+                        department: userRaw.department, email: userRaw.email, location: userRaw.location, notes: userRaw.notes, organization: userRaw.organization,
+                        phoneFax: userRaw.phoneFax, phoneLandline: userRaw.phoneLandline, phoneMobile: userRaw.phoneMobile,
+                        nameDisplay: userRaw.nameDisplay, nameFore: userRaw.nameFore, nameSur: userRaw.nameSur
+                    }
+                };
+
+                if (!payload.name || !payload.pass) {
+                    logContainer.innerHTML += `Skipping row ${i + 1}: 'name' and 'pass' are required.\n`; errorCount++; continue;
+                }
+
+                try {
+                    logContainer.innerHTML += `Creating user '${payload.name}'... `;
+                    await sendWsRequest('login', 'set', payload);
+                    logContainer.innerHTML += `SUCCESS\n`; successCount++;
+                } catch (error) {
+                    logContainer.innerHTML += `FAILED (${error.message})\n`; errorCount++;
+                }
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+
+            logContainer.innerHTML += `\nProcess complete. Success: ${successCount}, Failed: ${errorCount}.`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+    </script>
+
+</body>
+
+</html>
