@@ -1,6 +1,6 @@
 # 🛠️R3 Toolshop
 
-Welcome to the R3 Toolshop - this a tool born of ~~my own laziness~~ the necessity to make converting existing tables into REI3 relations as painlessly as possible! 
+Welcome to the R3 Toolshop - this a tool born of ~~my own laziness~~ the necessity to make converting your existing tables into REI3 relations as painless as possible! 
 
 REI3 is an extremely powerful, versatile, and easy to use free low code platform that you can host from the cloud or your own bare metal - I can't recommend it highly enough - [Please check out REI3 here](https://github.com/r3-team/r3) ... you'll be glad you did 😉
 
