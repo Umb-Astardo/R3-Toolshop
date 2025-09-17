@@ -5,7 +5,7 @@ Welcome to the R3 Toolshop - this a tool born of ~~my own laziness~~ the necessi
 REI3 is an extremely powerful, versatile, and easy to use free low code platform that you can host from the cloud or your own bare metal - I can't recommend it highly enough - [Please check out REI3 here](https://github.com/r3-team/r3) ... you'll be glad you did 😉
 
 ### Currently you can convert from
-- **Sharepoint lists** (*you need to log into your Sharepoint site first - this is simply to avoid you having to authorise it on app on Sharepoint*)
+- **Sharepoint lists** (*you need to log into your Sharepoint site first - this is simply to avoid you having to authorise R3 Toolshop as on app on Sharepoint*)
 - **SQLite files**
 - **CSV files**
 - **JSON**
