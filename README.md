@@ -15,9 +15,9 @@ REI3 is an extremely powerful, versatile, and easy to use free low code platform
 - **Copy existing relations into the same or a different application**
 - **Easily bulk create new users 😁**
 
-R3 Toolshop doesn't require any kind of installation - Just download the files and either use Go to build or run it as is.  If you don't want to install Go on your Windows box then you can just download the .exe file on it's own - it already has the html embedded in it so you only need that file but if you want to ensure that it actually is running the html as documented here then just download r3toolshop.html and put it in the same folder.  It should be run from the command line on the same machine as your dev installation of REI3 and is accessable via a web browser on localhost:8080.
+R3 Toolshop doesn't require any kind of installation - Just download the files and either use Go to build or run it as is.  If you don't want to install Go on your Windows box then you can just download the .exe file on it's own - it already has the html embedded in it so you only need that file but if you want to ensure that it actually is running the html as documented here then just download r3toolshop.html and put it in the same folder.  It should be run from the command line on the same machine as your dev installation of REI3 and is accessable via a web browser on http://localhost:[PORT NUMBER] - the default port is 8080 but you can select any port you wish by using the -p [PORT NUMBER] command line argument.
 
-**Note:** *All your server details are stored in your local storage on the browser and are not viewable in plain text*
+**Note:** *All your server details are stored in your local storage on the browser and are encoded in base64*
 
 ---
 
