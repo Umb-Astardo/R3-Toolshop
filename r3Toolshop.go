@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"embed"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -28,16 +29,25 @@ var upgrader = websocket.Upgrader{
 var embeddedFS embed.FS
 
 func main() {
+	port := flag.Int("p", 8080, "Port for the web server")
+	help := flag.Bool("h", false, "Show help message")
+	flag.Parse()
+
+	if *help {
+		fmt.Println("R3 Toolshop Server Usage:")
+		flag.PrintDefaults()
+		os.Exit(0)
+	}
+
 	http.HandleFunc("/", serveSPA)
 
 	// handlers for proxying
 	http.HandleFunc("/ws", handleWebSocketProxy)
 	http.HandleFunc("/proxy-schema", handleSchemaProxy)
 
-	port := "8080"
-	fmt.Printf("Starting R3 Toolshop server on http://localhost:%s\n", port)
-	webbrowser.Open("http://localhost:" + port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
+	fmt.Printf("Starting R3 Toolshop server on http://localhost:%d\n", *port)
+	webbrowser.Open(fmt.Sprintf("http://localhost:%d", *port))
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", *port), nil); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
